@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psiconecta - Cubo Interactivo</title>
+    <!-- Script de Collect.chat -->
+    <script async type="text/javascript" src="https://collectcdn.com/embed.js"></script>
+    
+    <style>
+        :root {
+            --guinda: #9f2241;
+            --dorado: #bc955c;
+            --gris-claro: #f4f4f4;
+            --gris-oscuro: #333333;
+            --blanco: #ffffff;
+            --verde-gob: #235B4E;
+        }
+
+        body {
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000; /* Fondo negro */
+            margin: 0;
+            padding: 0;
+            color: var(--gris-oscuro);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; 
+            user-select: none;
+        }
+
+        /* Instrucciones superiores */
+        .instrucciones {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            width: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .instrucciones h1 {
+            color: var(--guinda);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 2.5em;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.2); /* Sombra ajustada para fondo negro */
+        }
+
+        .instrucciones p {
+            color: #111;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.9);
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            border: 2px solid var(--dorado);
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(255,255,255,0.1);
+        }
+
+        /* Animación de flotación */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* --- ESCENA Y CUBO 3D PURO --- */
+        .scene {
+            width: 320px;
+            height: 320px;
+            perspective: 1000px;
+            cursor: grab;
+            touch-action: none;
+            animation: float 5s ease-in-out infinite; /* Efecto flotante aplicado aquí */
+        }
+
+        .scene:active {
+            cursor: grabbing;
+        }
+
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: translateZ(-160px) rotateX(-15deg) rotateY(-25deg);
+        }
+
+        /* Caras del cubo */
+        .face {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            background-color: var(--blanco); 
+            border: 3px solid var(--dorado);
+            box-shadow: inset 0 0 20px rgba(159, 34, 65, 0.1), 0 0 25px rgba(188, 149, 92, 0.4); /* Resplandor dorado hacia afuera */
+            padding: 20px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            backface-visibility: hidden;
+        }
+
+        /* Posicionamiento 3D (160px es la mitad de 320px) */
+        .front  { transform: rotateY(  0deg) translateZ(160px); }
+        .right  { transform: rotateY( 90deg) translateZ(160px); }
+        .back   { transform: rotateY(180deg) translateZ(160px); }
+        .left   { transform: rotateY(-90deg) translateZ(160px); }
+        .top    { transform: rotateX( 90deg) translateZ(160px); }
+        .bottom { transform: rotateX(-90deg) translateZ(160px); }
+
+        /* Estilización de la barra de desplazamiento interna */
+        .face::-webkit-scrollbar { width: 5px; }
+        .face::-webkit-scrollbar-track { background: #f1f1f1; }
+        .face::-webkit-scrollbar-thumb { background: var(--dorado); border-radius: 10px; }
+
+        /* Contenido interno de las caras */
+        .face h2 {
+            color: var(--guinda);
+            font-size: 1.5em;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--dorado);
+            padding-bottom: 5px;
+            width: 100%;
+        }
+
+        .face h3 {
+            color: var(--verde-gob);
+            font-size: 1.2em;
+            margin: 10px 0 5px 0;
+        }
+
+        .face p {
+            font-size: 0.95em;
+            text-align: justify;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .face img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 5px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--guinda) 0%, #6e172d 100%);
+            color: var(--blanco);
+            padding: 12px 25px;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 25px;
+            margin-top: 15px;
+            box-shadow: 0 4px 10px rgba(159, 34, 65, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            color: var(--dorado);
+        }
+
+        /* --- WIDGET DE CHAT EMERGENTE --- */
+        #chat-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9998;
+        }
+
+        .chat-btn {
+            background: linear-gradient(135deg, var(--guinda) 0%, #6e172d 100%);
+            color: var(--blanco);
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Sombra acentuada en fondo oscuro */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.3s;
+        }
+
+        .chat-btn:hover { transform: translateY(-3px); }
+
+        #chat-panel {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 380px;
+            height: 600px;
+            max-width: 90vw;
+            max-height: 80vh;
+            background-color: var(--blanco);
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(255,255,255,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transform: translateY(20px) scale(0.9);
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        #chat-panel.chat-panel-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        .chat-header {
+            background-color: var(--guinda);
+            color: var(--blanco);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            border-bottom: 3px solid var(--dorado);
+        }
+
+        .chat-close {
+            background: none;
+            border: none;
+            color: var(--blanco);
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="instrucciones">
+        <h1>Psiconecta</h1>
+        <p>🖱️ Haz clic y arrastra para girar el cubo</p>
+    </div>
+
+    <!-- Contenedor de la escena 3D -->
+    <div class="scene">
+        <div class="cube" id="interactive-cube">
+            
+            <!-- CARA FRONTAL: Inicio -->
+            <div class="face front">
+                <h2>Bienvenido</h2>
+                <img src="meme.png" alt="Ciberpsicología" style="max-height: 100px; object-fit: contain;">
+                <p style="text-align: center; font-weight: bold;">Prevención y atención psicoeducativa.</p>
+                <p style="text-align: center;">Gira el cubo para descubrir más herramientas para la salud mental en entornos digitales.</p>
+            </div>
+
+            <!-- CARA DERECHA: Quiénes Somos -->
+            <div class="face right">
+                <h2>Quiénes Somos</h2>
+                <div style="background: #fafafa; padding: 10px; border-left: 4px solid var(--guinda); font-style: italic; margin-bottom: 10px;">
+                    <p style="margin:0; font-size: 0.9em;">Somos un espacio dedicado a la prevención de la depresión y la atención al ciberbullying en comunidades educativas.</p>
+                </div>
+                <h3>Misión</h3>
+                <p>Brindar herramientas psicoeducativas a estudiantes, padres de familia y profesores para promover la salud mental.</p>
+            </div>
+
+            <!-- CARA TRASERA: Ciberpsicología -->
+            <div class="face back">
+                <h2>Ciberpsicología</h2>
+                <h3>¿Qué es el Ciberbullying?</h3>
+                <p>Acoso u hostigamiento a través de redes sociales, lo que provoca que a las personas les ocasione episodios depresivos o de ansiedad.</p>
+            </div>
+
+            <!-- CARA IZQUIERDA: Tipos de Ciberbullying -->
+            <div class="face left">
+                <h2>Tipos de Acoso</h2>
+                <img src="meme.png" alt="Meme ilustrativo de Ciberpsicología">
+                <p><strong>Existen diversas formas:</strong><br> Hostigamiento, suplantación de identidad y subir imágenes sin el consentimiento de la otra persona.</p>
+            </div>
+
+            <!-- CARA SUPERIOR: Nuevas Tecnologías -->
+            <div class="face top">
+                <h2>Recursos</h2>
+                <p style="text-align: center; margin-top: 20px;">Explora herramientas y nuevas tecnologías orientadas al bienestar digital y la salud mental.</p>
+                <a href="https://drive.google.com/file/d/1Fgm_YxxCrAkOMKMjEf3z1zOLU7KuL4FT/view" target="_blank" class="btn">Nuevas Tecnologías</a>
+            </div>
+
+            <!-- CARA INFERIOR: Footer -->
+            <div class="face bottom">
+                <h2>Psiconecta</h2>
+                <p style="text-align: center; margin-top: 30px;"><strong>Herramientas Psicoeducativas</strong></p>
+                <p style="text-align: center;">&copy; 2026</p>
+                <p style="text-align: center; color: var(--guinda); font-size: 0.8em;">Gira hacia arriba para volver al inicio</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- WIDGET DE CHAT EMERGENTE -->
+    <div id="chat-widget">
+        <button id="chat-toggle-btn" class="chat-btn">
+            <span>💬</span> Asistente
+        </button>
+        <div id="chat-panel">
+            <div class="chat-header">
+                <span>Asistente Psiconecta</span>
+                <button id="chat-close-btn" class="chat-close">&times;</button>
+            </div>
+            <!-- Iframe de Collect.chat -->
+            <iframe src="https://links.collect.chat/6ad7aa3966b67eda5a0083ce" width="100%" height="100%" frameBorder="0" style="flex-grow: 1;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Lógica del Chat
+            const chatToggleBtn = document.getElementById('chat-toggle-btn');
+            const chatCloseBtn = document.getElementById('chat-close-btn');
+            const chatPanel = document.getElementById('chat-panel');
+
+            chatToggleBtn.addEventListener('click', () => {
+                chatPanel.classList.toggle('chat-panel-visible');
+            });
+
+            chatCloseBtn.addEventListener('click', () => {
+                chatPanel.classList.remove('chat-panel-visible');
+            });
+
+            // Lógica del Cubo 3D
+            const cube = document.getElementById('interactive-cube');
+            
+            let isDragging = false;
+            let currentX = -15; 
+            let currentY = -25;
+            let startX, startY;
+            let autoSpin = true; 
+
+            function updateCubeRotation() {
+                cube.style.transform = `translateZ(-160px) rotateX(${currentX}deg) rotateY(${currentY}deg)`;
+            }
+
+            function animateSpin() {
+                if (autoSpin) {
+                    currentY += 0.2;
+                    updateCubeRotation();
+                }
+                requestAnimationFrame(animateSpin);
+            }
+            animateSpin(); 
+
+            // Eventos de Mouse
+            document.addEventListener('mousedown', (e) => {
+                if(e.target.closest('#chat-widget') || e.target.closest('a')) return;
+                
+                isDragging = true;
+                autoSpin = false; 
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+
+                currentY += deltaX * 0.4; 
+                currentX -= deltaY * 0.4; 
+
+                if(currentX > 90) currentX = 90;
+                if(currentX < -90) currentX = -90;
+
+                updateCubeRotation();
+
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+
+            // Eventos Táctiles (Móviles)
+            document.addEventListener('touchstart', (e) => {
+                if(e.target.closest('#chat-widget') || e.target.closest('a')) return;
+                
+                isDragging = true;
+                autoSpin = false;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                
+                const deltaX = e.touches[0].clientX - startX;
+                const deltaY = e.touches[0].clientY - startY;
+
+                currentY += deltaX * 0.5;
+                currentX -= deltaY * 0.5;
+
+                if(currentX > 90) currentX = 90;
+                if(currentX < -90) currentX = -90;
+
+                updateCubeRotation();
+
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: false });
+
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        });
+    </script>
+</body>
+</html>
